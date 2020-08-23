@@ -5,6 +5,9 @@ declare(strict_types=1);
 namespace Chiron\FastRoute;
 
 use FastRoute\RouteParser\Std as RouteParser;
+use Chiron\Routing\RouteCollection;
+use Chiron\Routing\UrlGeneratorInterface;
+use Psr\Http\Message\UriInterface;
 use InvalidArgumentException;
 
 //https://github.com/symfony/routing/blob/master/Generator/UrlGenerator.php#L324
@@ -12,10 +15,13 @@ use InvalidArgumentException;
 //https://github.com/yiisoft/router-fastroute/blob/master/src/FastRoute.php#L227
 //https://github.com/yiisoft/router/blob/master/src/UrlGeneratorInterface.php
 
-final class UrlGenerator
+final class UrlGenerator implements UrlGeneratorInterface
 {
     /** @var FastRoute\RouteParser */
     private $routeParser;
+
+    /** @var RouteCollection */
+    private $routes;
 
     /**
      * Characters that should not be URL encoded.
@@ -39,9 +45,40 @@ final class UrlGenerator
         '%25' => '%',
     ];
 
-    public function __construct(?RouteParser $routeParser = null)
+    public function __construct(RouteCollection $routes)
     {
-        $this->routeParser = $routeParser ?? new RouteParser();
+        $this->routes = $routes;
+        $this->routeParser = new RouteParser();
+    }
+
+    public function absoluteUrlFor(UriInterface $uri, string $routeName, array $substitutions = [], array $queryParams = []): string
+    {
+        $path = $this->relativeUrlFor($routeName, $substitutions, $queryParams);
+
+        $scheme = $uri->getScheme();
+        $authority = $uri->getAuthority();
+        $protocol = ($scheme ? $scheme . ':' : '') . ($authority ? '//' . $authority : '');
+
+        return $protocol . $path;
+    }
+
+    /**
+     * Build the path for a named route excluding the base url.
+     *
+     * @param string $routeName     Route name
+     * @param array  $substitutions Named argument replacement data
+     * @param array  $queryParams   Optional query string parameters
+     *
+     * @throws InvalidArgumentException If named route does not exist
+     * @throws InvalidArgumentException If required data not provided
+     *
+     * @return string
+     */
+    public function relativeUrlFor(string $routeName, array $substitutions = [], array $queryParams = []): string
+    {
+        $route = $this->routes->getNamedRoute($routeName);
+
+        return $this->generate($route->getPath(), $substitutions, $queryParams);
     }
 
     /**
@@ -62,7 +99,7 @@ final class UrlGenerator
     // TODO : améliorer le code avec cette partie là =>   https://github.com/illuminate/routing/blob/master/RouteUrlGenerator.php#L77
     // https://github.com/zendframework/zend-expressive-fastroute/blob/master/src/FastRouteRouter.php#L239
     //https://github.com/illuminate/routing/blob/master/RouteUrlGenerator.php#L77
-    public function generate(string $routePath, array $substitutions = [], array $queryParams = []): string
+    private function generate(string $routePath, array $substitutions = [], array $queryParams = []): string
     {
         // TODO : attention il faut lui passer la route en paramétre de la fonction generate() car on doit aussi utiliser les paramétres par défaut pour générer l'URI => https://github.com/yiisoft/router-fastroute/blob/master/src/FastRoute.php#L231
 

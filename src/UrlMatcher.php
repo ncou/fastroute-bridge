@@ -9,12 +9,11 @@ use Chiron\Routing\Traits\MiddlewareAwareTrait;
 use Chiron\Routing\Traits\RouteCollectionInterface;
 use Chiron\Routing\Traits\RouteCollectionTrait;
 use Chiron\Routing\Exception\RouterException;
-use Chiron\Routing\Exception\RouteNotFoundException;
 use Chiron\Pipe\PipelineBuilder;
-use Chiron\Routing\RouterInterface;
+use Chiron\Routing\UrlMatcherInterface;
+use Chiron\Routing\RouteCollection;
 use Chiron\Routing\Route;
 use Chiron\Routing\Method;
-use Chiron\Routing\RouteCollectorInterface;
 use Chiron\Routing\RouteGroup;
 use Chiron\Routing\MatchingResult;
 use Chiron\Routing\RoutingHandler;
@@ -26,8 +25,6 @@ use InvalidArgumentException;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use RuntimeException;
-use Chiron\Routing\UrlGeneratorInterface;
-use Psr\Http\Message\UriInterface;
 
 //https://github.com/zendframework/zend-expressive-fastroute/blob/master/src/FastRouteRouter.php
 //https://github.com/Wandu/Router/blob/master/RouteCollection.php
@@ -65,7 +62,7 @@ function array_has_dupes($array): bool {
 
 
 // TODO : vérifier comment ca se passe si on ajoute plusieurs fois une route avec le même nom !!!!
-final class FastRouteRouter implements RouterInterface, UrlGeneratorInterface
+final class UrlMatcher implements UrlMatcherInterface
 {
     /** @var FastRoute\RouteParser */
     private $routeParser;
@@ -73,15 +70,12 @@ final class FastRouteRouter implements RouterInterface, UrlGeneratorInterface
     /** @var FastRoute\DataGenerator */
     private $routeGenerator;
 
-     /** @var UrlGenerator */
-    private $urlGenerator;
-
-    /** @var \Chiron\Routing\Route[] */
-    private $routes = [];
-
     /** @var bool */
     // TODO : renommer la variable en "injected"
     private $isInjected = false;
+
+    /** @var RouteCollection */
+    private $routes;
 
     /**
      * @var array
@@ -136,13 +130,14 @@ final class FastRouteRouter implements RouterInterface, UrlGeneratorInterface
      */
     // TODO : créer un constructeur qui prendra en paramétre un routeCollector, ca évitera de faire un appel à setRouteCollector() !!!!
     // TODO : virer le DataGenerator qui est en paramétre et faire un new directement dans le constructeur.
-    public function __construct()
+    // TODO : renommer cette variable $routeCollection en $routes une fois qu'on aura fait hériter la classe RouteCollection::class de Iterator et Count !!!!
+    public function __construct(RouteCollection $routes)
     {
+        $this->routes = $routes;
+
         $this->routeParser = new RouteParser();
         // build parent route collector
         $this->routeGenerator = new RouteGenerator();
-
-        $this->urlGenerator = new UrlGenerator($this->routeParser);
 
         // TODO utiliser ce bout de code et faire un tableau de pattern dans la classe de ce type ['slug' => 'xxxx', 'number' => 'yyyy']
 /*
@@ -168,53 +163,6 @@ final class FastRouteRouter implements RouterInterface, UrlGeneratorInterface
 
         return $this;
     }
-
-    /**
-     * Add a Route to the collection, and return the route for chaining calls.
-     *
-     * @param Route $route
-     */
-    public function addRoute(Route $route): Route
-    {
-        // TODO : Lever une logica exception si on essaye d'ajouter une route, alors que que le booleen $this->isInjected est à true. Car cela n'a pas de sens d'ajouter une route aprés avoir appellé la méthode ->match de cette classe !!!!
-        $this->routes[] = $route;
-
-        return $route;
-    }
-
-    /**
-     * Get a named route.
-     *
-     * @param string $name Route name
-     *
-     * @throws RouteNotFoundException If named route does not exist
-     *
-     * @return \Chiron\Routing\Route
-     */
-    // TODO : il faudrait rajouter un contrôle sur les doublons de "name" ??? car cela peut poser soucis (notamment si on souhaite générer une url pour une route nommée) !!!!
-    // TODO : renommer la méthode en getRoute() ????
-    // TODO : passer cette méthode en private et la retirer de l'interface du router car elle n'a pas grand importance !!!! ???? et dans ce cas il faudrait aussi supprimer la classe RouteNotFoundException du package pour utiliser l'exception générique RouterException.
-    public function getNamedRoute(string $name): Route
-    {
-        foreach ($this->getRoutes() as $route) {
-            if ($route->getName() === $name) {
-                return $route;
-            }
-        }
-
-        throw new RouteNotFoundException($name);
-    }
-
-    /**
-     * Get route objects.
-     *
-     * @return Route[]
-     */
-    public function getRoutes(): array
-    {
-        return $this->routes;
-    }
-
 
     public function match(ServerRequestInterface $request): MatchingResult
     {
@@ -282,6 +230,7 @@ final class FastRouteRouter implements RouterInterface, UrlGeneratorInterface
             return;
         }
 
+        // TODO : s'assurarer que la classe routeCollection est bien une classe de type Iterator & Count, comme ca on pourra directement itérer sur $this->routeCollection (d'ailleur il faudra renommer cette variable en $this->routes !!!)
         foreach ($this->routes as $route) {
             // check for scheme condition
             if (! is_null($route->getScheme()) && $route->getScheme() !== $request->getUri()->getScheme()) {
@@ -362,36 +311,4 @@ final class FastRouteRouter implements RouterInterface, UrlGeneratorInterface
             }
         }
     }
-
-
-    public function absoluteUrlFor(UriInterface $uri, string $routeName, array $substitutions = [], array $queryParams = []): string
-    {
-        $path = $this->relativeUrlFor($routeName, $substitutions, $queryParams);
-
-        $scheme = $uri->getScheme();
-        $authority = $uri->getAuthority();
-        $protocol = ($scheme ? $scheme . ':' : '') . ($authority ? '//' . $authority : '');
-
-        return $protocol . $path;
-    }
-
-    /**
-     * Build the path for a named route excluding the base url.
-     *
-     * @param string $routeName     Route name
-     * @param array  $substitutions Named argument replacement data
-     * @param array  $queryParams   Optional query string parameters
-     *
-     * @throws InvalidArgumentException If named route does not exist
-     * @throws InvalidArgumentException If required data not provided
-     *
-     * @return string
-     */
-    public function relativeUrlFor(string $routeName, array $substitutions = [], array $queryParams = []): string
-    {
-        $route = $this->getNamedRoute($routeName);
-
-        return $this->urlGenerator->generate($route->getPath(), $substitutions, $queryParams);
-    }
-
 }

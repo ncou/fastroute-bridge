@@ -19,9 +19,9 @@ use Chiron\Container\Container;
 use Chiron\Container\InvokerInterface;
 use Chiron\Bootload\ServiceProvider\ServiceProviderInterface;
 use Chiron\Kernel;
-use Chiron\FastRoute\FastRouteRouter;
-use Chiron\Routing\RouteCollector;
-use Chiron\Routing\RouterInterface;
+use Chiron\FastRoute\UrlMatcher;
+use Chiron\FastRoute\UrlGenerator;
+use Chiron\Routing\UrlMatcherInterface;
 use Chiron\Routing\UrlGeneratorInterface;
 use Psr\Container\ContainerInterface;
 use Psr\Http\Message\ResponseFactoryInterface;
@@ -42,9 +42,8 @@ class FastRouteServiceProvider implements ServiceProviderInterface
      */
     public function register(BindingInterface $container): void
     {
-        // register fastroute class as the routerinterface.
-        $container->singleton(RouterInterface::class, FastRouteRouter::class);
-        // aliases the urlgenerator class to the same router (1 class for 2 interfaces).
-        $container->alias(UrlGeneratorInterface::class, RouterInterface::class);
+        $container->singleton(UrlMatcherInterface::class, UrlMatcher::class);
+        $container->singleton(UrlGeneratorInterface::class, UrlGenerator::class);
+        //$container->alias(UrlGeneratorInterface::class, RouterInterface::class);
     }
 }
