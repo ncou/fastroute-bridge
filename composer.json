@@ -1,0 +1,68 @@
+{
+    "name": "chiron/fastroute-bridge",
+    "type": "library",
+    "description": "short description",
+    "keywords": [
+        "router",
+        "routing",
+        "middleware",
+        "fastroute",
+        "fast-route",
+        "bridge",
+        "nikic",
+        "http",
+        "psr-7",
+        "psr7",
+        "psr-15",
+        "psr15"
+    ],
+    "homepage": "https://github.com/ncou/",
+    "license": "MIT",
+    "require": {
+        "php": "^7.1",
+        "chiron/routing": "^1.0",
+        "nikic/fast-route": "^1.3",
+        "psr/http-server-middleware": "^1.0"
+    },
+    "require-dev": {
+        "phpunit/phpunit": "^8.0",
+        "phpstan/phpstan": "^0.12.0",
+        "overtrue/phplint": "^2.0",
+        "chiron/coding-standard": "^3.0",
+        "nyholm/psr7": "^1.1"
+    },
+    "autoload": {
+        "psr-4": {
+            "Chiron\\FastRoute\\": "src"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Chiron\\Tests\\FastRoute\\": "tests"
+        }
+    },
+    "scripts": {
+        "test": [
+            "@phpunit",
+            "@phpcs",
+            "@phpstan"
+        ],
+        "phpunit": "phpunit --colors=always",
+        "phpcs": "phpcs src",
+        "phpcs-fix": "phpcbf src",
+        "phpstan": "phpstan analyse src --level=0",
+        "test-coverage": "phpunit --coverage-clover clover.xml"
+    },
+    "extra": {
+        "branch-alias": {
+            "dev-master": "1.0-dev"
+        },
+        "chiron": {
+            "providers": ["Chiron\\FastRoute\\Provider\\FastRouteServiceProvider"]
+        }
+    },
+    "config": {
+        "sort-packages": true
+    },
+    "minimum-stability": "stable"
+}
