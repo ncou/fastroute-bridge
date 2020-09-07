@@ -9,6 +9,7 @@ use Chiron\Routing\RouteCollection;
 use Chiron\Routing\UrlGeneratorInterface;
 use Psr\Http\Message\UriInterface;
 use InvalidArgumentException;
+use Chiron\FastRoute\Traits\PatternsTrait;
 
 //https://github.com/symfony/routing/blob/master/Generator/UrlGenerator.php#L324
 //https://github.com/illuminate/routing/blob/master/RouteUrlGenerator.php
@@ -17,6 +18,8 @@ use InvalidArgumentException;
 
 final class UrlGenerator implements UrlGeneratorInterface
 {
+    use PatternsTrait;
+
     /** @var FastRoute\RouteParser */
     private $routeParser;
 
@@ -78,7 +81,12 @@ final class UrlGenerator implements UrlGeneratorInterface
     {
         $route = $this->routes->getNamedRoute($routeName);
 
-        return $this->generate($route->getPath(), $substitutions, $queryParams);
+        $routePath = $this->replaceAssertPatterns($route->getRequirements(), $route->getPath());
+        $routePath = $this->replaceWordPatterns($routePath);
+
+        $substitutions = array_replace($route->getDefaults(), $substitutions);
+
+        return $this->generate($routePath, $substitutions, $queryParams);
     }
 
     /**
@@ -116,6 +124,7 @@ final class UrlGenerator implements UrlGeneratorInterface
         $segments = [];
         $segmentName = '';
 
+        // One route pattern can correspond to multiple routes if it has optional parts
         foreach ($routeDatas as $routeData) {
             foreach ($routeData as $item) {
                 if (is_string($item)) {
@@ -138,7 +147,8 @@ final class UrlGenerator implements UrlGeneratorInterface
 
                 // TODO : faire aussi une vérification avec la valeur "assert/requirement" qui est portée dans l'objet Route.
                 // Check substitute value with regex
-                if (! preg_match('~^' . $item[1] . '$~', (string) $substitutions[$item[0]])) {
+                $pattern = str_replace('~', '\~', $item[1]);
+                if (! preg_match('~^' . $pattern . '$~', (string) $substitutions[$item[0]])) {
                     throw new InvalidArgumentException(sprintf(
                         'Parameter value for [%s] did not match the regex `%s`',
                         $item[0],

@@ -25,6 +25,7 @@ use InvalidArgumentException;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use RuntimeException;
+use Chiron\FastRoute\Traits\PatternsTrait;
 
 //https://github.com/zendframework/zend-expressive-fastroute/blob/master/src/FastRouteRouter.php
 //https://github.com/Wandu/Router/blob/master/RouteCollection.php
@@ -64,6 +65,8 @@ function array_has_dupes($array): bool {
 // TODO : vérifier comment ca se passe si on ajoute plusieurs fois une route avec le même nom !!!!
 final class UrlMatcher implements UrlMatcherInterface
 {
+    use PatternsTrait;
+
     /** @var FastRoute\RouteParser */
     private $routeParser;
 
@@ -76,50 +79,6 @@ final class UrlMatcher implements UrlMatcherInterface
 
     /** @var RouteCollection */
     private $routes;
-
-    /**
-     * @var array
-     */
-    // TODO : regarder ici : https://github.com/ncou/router-group-middleware/blob/master/src/Router/Router.php#L25
-    // TODO : regarder ici : https://github.com/ncou/php-router-group-middleware/blob/master/src/Router.php#L26
-    // TODO : faire un tableau plus simple et ensuite dans le constructeur faire un array walk pour ajouter ces patterns.
-    // TODO : on devrait pas utiliser plutot cet regex pour les UUID : '[0-9a-fA-F]{8}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{12}'
-    private $patternMatchers = [
-        '/{(.+?):number}/'        => '{$1:[0-9]+}',
-        '/{(.+?):word}/'          => '{$1:[a-zA-Z]+}',
-        '/{(.+?):alphanum_dash}/' => '{$1:[a-zA-Z0-9-_]+}',
-        '/{(.+?):slug}/'          => '{$1:[a-z0-9-]+}',
-        '/{(.+?):uuid}/'          => '{$1:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}}',
-    ];
-
-
-
-    /*
-
-    ':any' => '[^/]+',
-    ':all' => '.*'
-
-
-    '*'  => '.+?',
-    '**' => '.++',
-
-
-    */
-
-    /*
-    //https://github.com/codeigniter4/CodeIgniter4/blob/develop/system/Router/RouteCollection.php#L122
-
-    private $placeholders = [
-        'any'      => '.*',
-        'segment'  => '[^/]+',
-        'alphanum' => '[a-zA-Z0-9]+',
-        'num'      => '[0-9]+',
-        'alpha'    => '[a-zA-Z]+',
-        'hash'     => '[^/]+',
-    ];
-
-
-    */
 
 
     /**
@@ -230,7 +189,9 @@ final class UrlMatcher implements UrlMatcherInterface
             return;
         }
 
-        // TODO : s'assurarer que la classe routeCollection est bien une classe de type Iterator & Count, comme ca on pourra directement itérer sur $this->routeCollection (d'ailleur il faudra renommer cette variable en $this->routes !!!)
+        // TODO : améliorer le code en utilisant cet exemple : https://github.com/yiisoft/router-fastroute/blob/93de4e7af1ad4a4831a9d8986d0b3d4fcf17bfe2/src/UrlMatcher.php#L274
+        // Regex pour splitter une url : https://www.admfactory.com/split-url-into-components-using-regex/
+        // TODO : améliorer le code pour la vérification sur le getScheme / host et port : https://github.com/thephpleague/route/blob/5.x/src/Dispatcher.php#L69
         foreach ($this->routes as $route) {
             // check for scheme condition
             if (! is_null($route->getScheme()) && $route->getScheme() !== $request->getUri()->getScheme()) {
@@ -255,39 +216,6 @@ final class UrlMatcher implements UrlMatcherInterface
     }
 
     /**
-     * Add or replace the requirement pattern inside the route path.
-     *
-     * @param array  $requirements
-     * @param string $path
-     *
-     * @return string
-     */
-    private function replaceAssertPatterns(array $requirements, string $path): string
-    {
-        $patternAssert = [];
-        foreach ($requirements as $attribute => $pattern) {
-            // it will replace {attribute_name} to {attribute_name:$pattern}, work event if there is alreay a patter {attribute_name:pattern_to_remove} to {attribute_name:$pattern}
-            // the second regex group (starting with the char ':') will be discarded.
-            $patternAssert['/{(' . $attribute . ')(\:.*)?}/'] = '{$1:' . $pattern . '}';
-            //$patternAssert['/{(' . $attribute . ')}/'] = '{$1:' . $pattern . '}'; // TODO : réfléchir si on utilise cette regex, dans ce cas seulement les propriétés qui n'ont pas déjà un pattern de défini (c'est à dire une partie avec ':pattern')
-        }
-
-        return preg_replace(array_keys($patternAssert), array_values($patternAssert), $path);
-    }
-
-    /**
-     * Replace word patterns with regex in route path.
-     *
-     * @param string $path
-     *
-     * @return string
-     */
-    private function replaceWordPatterns(string $path): string
-    {
-        return preg_replace(array_keys($this->patternMatchers), array_values($this->patternMatchers), $path);
-    }
-
-    /**
      * Adds a route to the collection.
      *
      * The syntax used in the $route string depends on the used route parser.
@@ -300,12 +228,15 @@ final class UrlMatcher implements UrlMatcherInterface
      */
     private function injectRoute(Route $route, array $httpMethod, string $routePath): void
     {
+        // TODO : attention car la méthode "parse()" peut aussi retourner une FastRoute\BadRouteException qu'il faudrait catcher !!!!   => https://github.com/nikic/FastRoute/blob/4406c3b79b3cce4e906fa9c11cd564d2828f6257/src/RouteParser/Std.php#L40
         $routeDatas = $this->routeParser->parse($routePath);
         foreach ($httpMethod as $method) {
             foreach ($routeDatas as $routeData) {
                 try {
                     $this->routeGenerator->addRoute($method, $routeData, $route);
                 } catch (\FastRoute\BadRouteException $e) {
+                    // TODO : ne plus utiliser l'exception RouterException, mais une exception générique type InvalidArgumentException. ou alors renommer l'exception en RoutingException.
+                    // TODO : créer une exception génrique BadRouteException dans le package "chiron/routing"
                     throw new RouterException($e->getMessage());
                 }
             }

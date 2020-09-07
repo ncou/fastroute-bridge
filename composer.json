@@ -29,6 +29,7 @@
         "phpstan/phpstan": "^0.12.0",
         "overtrue/phplint": "^2.0",
         "chiron/coding-standard": "^3.0",
+        "chiron/container": "^3.6",
         "nyholm/psr7": "^1.1"
     },
     "autoload": {
