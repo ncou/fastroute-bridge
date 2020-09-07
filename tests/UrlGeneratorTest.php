@@ -82,6 +82,16 @@ class UrlGeneratorTest extends TestCase
         $this->assertEquals('/view/john', $url);
     }
 
+    public function testParametersWithDefaultValueIsOverriddentAndSubstituted(): void
+    {
+        $routes = [
+            Route::get('/view/{name}')->name('view')->setDefault('name', 'john'),
+        ];
+        $url = $this->createUrlGenerator($routes)->relativeUrlFor('view', ['name' => 'tony']);
+
+        $this->assertEquals('/view/tony', $url);
+    }
+
     public function testOptionalParametersWithDefaultValueIsSubstituted(): void
     {
         $routes = [
