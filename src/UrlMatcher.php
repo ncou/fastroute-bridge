@@ -13,7 +13,7 @@ use Chiron\Pipe\PipelineBuilder;
 use Chiron\Routing\UrlMatcherInterface;
 use Chiron\Routing\RouteCollection;
 use Chiron\Routing\Route;
-use Chiron\Routing\Method;
+use Chiron\Http\Message\RequestMethod;
 use Chiron\Routing\RouteGroup;
 use Chiron\Routing\MatchingResult;
 use Chiron\Routing\RoutingHandler;
@@ -160,7 +160,7 @@ final class UrlMatcher implements UrlMatcherInterface
             return MatchingResult::fromRouteFailure($result[1]);
         }
 
-        return MatchingResult::fromRouteFailure(Method::ANY);
+        return MatchingResult::fromRouteFailure(RequestMethod::ANY);
     }
 
     /**

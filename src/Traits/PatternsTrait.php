@@ -13,7 +13,6 @@ use Chiron\Pipe\PipelineBuilder;
 use Chiron\Routing\UrlMatcherInterface;
 use Chiron\Routing\RouteCollection;
 use Chiron\Routing\Route;
-use Chiron\Routing\Method;
 use Chiron\Routing\RouteGroup;
 use Chiron\Routing\MatchingResult;
 use Chiron\Routing\RoutingHandler;
