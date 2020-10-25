@@ -17,7 +17,7 @@ namespace Chiron\FastRoute\Provider;
 //use Chiron\Http\Middleware\ErrorHandlerMiddleware;
 use Chiron\Container\Container;
 use Chiron\Container\InvokerInterface;
-use Chiron\Bootload\ServiceProvider\ServiceProviderInterface;
+use Chiron\Core\Container\Provider\ServiceProviderInterface;
 use Chiron\Kernel;
 use Chiron\FastRoute\UrlMatcher;
 use Chiron\FastRoute\UrlGenerator;
