@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 namespace Chiron\FastRoute\Traits;
 
-use Chiron\Routing\Traits\MiddlewareAwareInterface;
-use Chiron\Routing\Traits\MiddlewareAwareTrait;
 use Chiron\Routing\Traits\RouteCollectionInterface;
 use Chiron\Routing\Traits\RouteCollectionTrait;
 use Chiron\Routing\Exception\RouterException;

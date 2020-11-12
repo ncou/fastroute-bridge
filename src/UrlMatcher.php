@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 namespace Chiron\FastRoute;
 
-use Chiron\Routing\Traits\MiddlewareAwareInterface;
-use Chiron\Routing\Traits\MiddlewareAwareTrait;
 use Chiron\Routing\Traits\RouteCollectionInterface;
 use Chiron\Routing\Traits\RouteCollectionTrait;
 use Chiron\Routing\Exception\RouterException;
@@ -29,6 +27,20 @@ use Chiron\FastRoute\Traits\PatternsTrait;
 
 //https://github.com/zendframework/zend-expressive-fastroute/blob/master/src/FastRouteRouter.php
 //https://github.com/Wandu/Router/blob/master/RouteCollection.php
+
+// HEAD Support :
+// https://github.com/atanvarno69/router
+// https://github.com/slimphp/Slim/blob/4.x/Slim/Routing/FastRouteDispatcher.php#L36
+
+// CACHED ROUTER :
+//https://github.com/atanvarno69/router/blob/master/src/CachedRouter.php
+//https://github.com/slimphp/Slim/blob/4.x/Slim/Routing/Dispatcher.php#L49
+//https://github.com/thephpleague/route/blob/5.x/src/CachedRouter.php
+//https://github.com/zendframework/zend-expressive-fastroute/blob/master/src/FastRouteRouter.php#L471
+//https://github.com/mezzio/mezzio-fastroute/blob/3.1.x/src/FastRouteRouter.php
+//https://github.com/litphp/cached-fast-route/blob/master/src/CachedDispatcher.php#L64
+//https://github.com/vanchelo/modxFastRouter/blob/master/core/components/fastrouter/fastrouter.class.php#L240
+//https://github.com/abbadon1334/atk4-fastroute/blob/master/src/Router.php#L244
 
 // TODO : il manque head et options dans la phpdoc, et le check sur la collision n'est plus d'actualité !!!!
 /**
@@ -78,8 +90,7 @@ final class UrlMatcher implements UrlMatcherInterface
     private $isInjected = false;
 
     /** @var RouteCollection */
-    private $routes;
-
+    private $routeCollection;
 
     /**
      * Constructor.
@@ -90,9 +101,9 @@ final class UrlMatcher implements UrlMatcherInterface
     // TODO : créer un constructeur qui prendra en paramétre un routeCollector, ca évitera de faire un appel à setRouteCollector() !!!!
     // TODO : virer le DataGenerator qui est en paramétre et faire un new directement dans le constructeur.
     // TODO : renommer cette variable $routeCollection en $routes une fois qu'on aura fait hériter la classe RouteCollection::class de Iterator et Count !!!!
-    public function __construct(RouteCollection $routes)
+    public function __construct(RouteCollection $routeCollection)
     {
-        $this->routes = $routes;
+        $this->routeCollection = $routeCollection;
 
         $this->routeParser = new RouteParser();
         // build parent route collector
@@ -192,7 +203,7 @@ final class UrlMatcher implements UrlMatcherInterface
         // TODO : améliorer le code en utilisant cet exemple : https://github.com/yiisoft/router-fastroute/blob/93de4e7af1ad4a4831a9d8986d0b3d4fcf17bfe2/src/UrlMatcher.php#L274
         // Regex pour splitter une url : https://www.admfactory.com/split-url-into-components-using-regex/
         // TODO : améliorer le code pour la vérification sur le getScheme / host et port : https://github.com/thephpleague/route/blob/5.x/src/Dispatcher.php#L69
-        foreach ($this->routes as $route) {
+        foreach ($this->routeCollection as $route) {
             // check for scheme condition
             if (! is_null($route->getScheme()) && $route->getScheme() !== $request->getUri()->getScheme()) {
                 continue;

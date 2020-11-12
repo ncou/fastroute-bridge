@@ -24,7 +24,7 @@ final class UrlGenerator implements UrlGeneratorInterface
     private $routeParser;
 
     /** @var RouteCollection */
-    private $routes;
+    private $routeCollection;
 
     /**
      * Characters that should not be URL encoded.
@@ -48,9 +48,9 @@ final class UrlGenerator implements UrlGeneratorInterface
         '%25' => '%',
     ];
 
-    public function __construct(RouteCollection $routes)
+    public function __construct(RouteCollection $routeCollection)
     {
-        $this->routes = $routes;
+        $this->routeCollection = $routeCollection;
         $this->routeParser = new RouteParser();
     }
 
@@ -79,7 +79,7 @@ final class UrlGenerator implements UrlGeneratorInterface
      */
     public function relativeUrlFor(string $routeName, array $substitutions = [], array $queryParams = []): string
     {
-        $route = $this->routes->getNamedRoute($routeName);
+        $route = $this->routeCollection->getNamedRoute($routeName);
 
         $routePath = $this->replaceAssertPatterns($route->getRequirements(), $route->getPath());
         $routePath = $this->replaceWordPatterns($routePath);
