@@ -23,6 +23,7 @@ use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use RuntimeException;
 
+// TODO : il faudrait pas plutot utiliser des "protected" au lieu de private pour les attributs et méthodes de cette classe Trait ???
 trait PatternsTrait
 {
     /**

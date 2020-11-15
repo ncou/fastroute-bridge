@@ -20,7 +20,7 @@ class UrlGeneratorTest extends TestCase
 {
     private function createUrlGenerator(array $routes): UrlGeneratorInterface
     {
-        $routeCollection = new RouteCollection(new TargetFactory(new Container()));
+        $routeCollection = new RouteCollection(new Container());
 
         foreach ($routes as $route) {
             $routeCollection->addRoute($route);
@@ -151,8 +151,7 @@ class UrlGeneratorTest extends TestCase
     public function testExtraParametersAddedAsQueryString(): void
     {
         $routes = [
-            Route::get('/test/{name}')
-                ->name('test')
+            Route::get('/test/{name}')->name('test')
         ];
 
         $url = $this->createUrlGenerator($routes)->relativeUrlFor('test', ['name' => 'post'], ['id' => 12, 'sort' => 'asc']);

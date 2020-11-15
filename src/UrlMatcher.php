@@ -143,7 +143,7 @@ final class UrlMatcher implements UrlMatcherInterface
         $dispatcher = $this->getDispatcher();
 
         $httpMethod = $request->getMethod();
-        $uri = $request->getUri()->getPath(); //$uri = '/' . ltrim($request->getUri()->getPath(), '/');
+        $uri = $request->getUri()->getPath();
 
         $result = $dispatcher->dispatch($httpMethod, rawurldecode($uri));
 

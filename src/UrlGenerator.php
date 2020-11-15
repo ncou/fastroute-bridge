@@ -72,14 +72,14 @@ final class UrlGenerator implements UrlGeneratorInterface
      * @param array  $substitutions Named argument replacement data
      * @param array  $queryParams   Optional query string parameters
      *
-     * @throws InvalidArgumentException If named route does not exist
-     * @throws InvalidArgumentException If required data not provided
+     * @throws RouteNotFoundException If named route does not exist.
+     * @throws InvalidArgumentException If required data not provided.
      *
      * @return string
      */
     public function relativeUrlFor(string $routeName, array $substitutions = [], array $queryParams = []): string
     {
-        $route = $this->routeCollection->getNamedRoute($routeName);
+        $route = $this->routeCollection->getRoute($routeName);
 
         $routePath = $this->replaceAssertPatterns($route->getRequirements(), $route->getPath());
         $routePath = $this->replaceWordPatterns($routePath);
@@ -96,8 +96,7 @@ final class UrlGenerator implements UrlGeneratorInterface
      * @param array  $substitutions Named argument replacement data
      * @param array  $queryParams   Optional query string parameters
      *
-     * @throws InvalidArgumentException If named route does not exist
-     * @throws InvalidArgumentException If required data not provided
+     * @throws InvalidArgumentException If parameter is invalid, or segment data is missing.
      *
      * @return string
      */
