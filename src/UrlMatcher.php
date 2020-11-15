@@ -11,7 +11,7 @@ use Chiron\Pipe\PipelineBuilder;
 use Chiron\Routing\UrlMatcherInterface;
 use Chiron\Routing\RouteCollection;
 use Chiron\Routing\Route;
-use Chiron\Http\Message\RequestMethod;
+use Chiron\Http\Message\RequestMethod as Method;
 use Chiron\Routing\RouteGroup;
 use Chiron\Routing\MatchingResult;
 use Chiron\Routing\RoutingHandler;
@@ -24,6 +24,10 @@ use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use RuntimeException;
 use Chiron\FastRoute\Traits\PatternsTrait;
+
+// CACHE DUMP FILE : https://github.com/symfony/routing/blob/1e6197621f53ebc807db00892194ca5d816c1f3e/Matcher/Dumper/CompiledUrlMatcherDumper.php#L40
+//https://github.com/yiisoft/router-fastroute/blob/master/src/FastRouteCache.php#L25
+//https://github.com/zendframework/zend-expressive-fastroute/blob/master/src/FastRouteRouter.php#L549
 
 //https://github.com/zendframework/zend-expressive-fastroute/blob/master/src/FastRouteRouter.php
 //https://github.com/Wandu/Router/blob/master/RouteCollection.php
@@ -79,18 +83,14 @@ final class UrlMatcher implements UrlMatcherInterface
 {
     use PatternsTrait;
 
-    /** @var FastRoute\RouteParser */
-    private $routeParser;
-
-    /** @var FastRoute\DataGenerator */
-    private $routeGenerator;
-
-    /** @var bool */
-    // TODO : renommer la variable en "injected"
-    private $isInjected = false;
-
     /** @var RouteCollection */
     private $routeCollection;
+    /** @var FastRoute\RouteParser */
+    private $routeParser;
+    /** @var FastRoute\DataGenerator */
+    private $routeGenerator;
+    /** @var bool */
+    private $isInjected = false; // TODO : renommer la variable en "injected"
 
     /**
      * Constructor.
@@ -136,53 +136,80 @@ final class UrlMatcher implements UrlMatcherInterface
 
     public function match(ServerRequestInterface $request): MatchingResult
     {
-        // prepare routes
         $this->injectRoutes($request);
-
-        // process routes
-        $dispatcher = $this->getDispatcher();
 
         $httpMethod = $request->getMethod();
         $uri = $request->getUri()->getPath();
 
-        $result = $dispatcher->dispatch($httpMethod, rawurldecode($uri));
+        $match = $this->getDispatcher()->dispatch($httpMethod, rawurldecode($uri));
 
-        //die(var_dump($result));
+        // TODO : ajouter une case default et lever une exception car ce cas là ne doit pas arriver !!!
+        // TODO : code à améliorer ??? faire plutot un if(METHOD_NOT_FOUND) / else (FOUND) { return seulement si isExtraCondition à true} et à la fin de la méthode match() faire un return fromRouteFailure(ANY) pour gérer le cas du not found et le cas ou les extraconditions sont à false !!!
+        switch ($match[0]) {
+            case DispatcherInterface::NOT_FOUND:
+                // The matching failed, return a route not found result.
+                return MatchingResult::fromRouteFailure(Method::ANY);
+            case DispatcherInterface::METHOD_NOT_ALLOWED:
+                // Passes the allowed HTTP methods as parameter.
+                return MatchingResult::fromRouteFailure($match[1]);
+            case DispatcherInterface::FOUND:
+                // Resolve the route using the 'route id' string.
+                $route = $this->resolveRoute($match[1]);
 
-        return $result[0] !== DispatcherInterface::FOUND
-            ? $this->marshalFailedRoute($result)
-            : $this->marshalMatchedRoute($result);
+                if (! $this->isExtraConditionMatch($route, $request)) {
+                    // The scheme/host/port doesn't match, return a route not found result.
+                    return MatchingResult::fromRouteFailure(Method::ANY);
+                }
+                // We have found a matching route, and pass the uri parameters.
+                return MatchingResult::fromRoute($route, $match[2]);
+        }
+    }
+
+    private function resolveRoute(string $routeId): Route
+    {
+        foreach ($this->routeCollection as $route) {
+            if ($routeId === $this->getRouteId($route)) {
+                return $route;
+            }
+        }
+
+        // This case shouldn't happen in real life !
+        // TODO : retourner plutot une exception RouteNotFoundException !!!
+        throw new RouterException('Something went wrong. The route identifier seems invalid ?!?');
+    }
+
+    private function getRouteId(Route $route): string
+    {
+        return $route->getName() ?? (implode(', ', $route->getAllowedMethods()) . ' ' . $route->getHost() . $route->getPath());
+    }
+
+
+    private function isExtraConditionMatch(Route $route, ServerRequestInterface $request): bool
+    {
+        // check for scheme condition
+        $scheme = $route->getScheme();
+        if ($scheme !== null && $scheme !== $request->getUri()->getScheme()) {
+            return false;
+        }
+
+        // check for domain condition
+        $host = $route->getHost();
+        if ($host !== null && $host !== $request->getUri()->getHost()) {
+            return false;
+        }
+
+        // check for port condition
+        $port = $route->getPort();
+        if ($port !== null && $port !== $request->getUri()->getPort()) {
+            return false;
+        }
+
+        return true;
     }
 
     private function getDispatcher(): DispatcherInterface
     {
         return new RouteDispatcher($this->routeGenerator->getData());
-    }
-
-    /**
-     * Marshal a routing failure result.
-     *
-     * If the failure was due to the HTTP method, passes the allowed HTTP
-     * methods to the factory.
-     */
-    private function marshalFailedRoute(array $result): MatchingResult
-    {
-        if ($result[0] === DispatcherInterface::METHOD_NOT_ALLOWED) {
-            return MatchingResult::fromRouteFailure($result[1]);
-        }
-
-        return MatchingResult::fromRouteFailure(RequestMethod::ANY);
-    }
-
-    /**
-     * Marshals a route result based on the results of matching and the current HTTP method.
-     */
-    private function marshalMatchedRoute(array $result): MatchingResult
-    {
-        $route = $result[1];
-        $params = $result[2];
-
-        return MatchingResult::fromRoute($route, $params);
     }
 
     /**
@@ -204,23 +231,11 @@ final class UrlMatcher implements UrlMatcherInterface
         // Regex pour splitter une url : https://www.admfactory.com/split-url-into-components-using-regex/
         // TODO : améliorer le code pour la vérification sur le getScheme / host et port : https://github.com/thephpleague/route/blob/5.x/src/Dispatcher.php#L69
         foreach ($this->routeCollection as $route) {
-            // check for scheme condition
-            if (! is_null($route->getScheme()) && $route->getScheme() !== $request->getUri()->getScheme()) {
-                continue;
-            }
-            // check for domain condition
-            if (! is_null($route->getHost()) && $route->getHost() !== $request->getUri()->getHost()) {
-                continue;
-            }
-            // check for port condition
-            if (! is_null($route->getPort()) && $route->getPort() !== $request->getUri()->getPort()) {
-                continue;
-            }
-
+            // Prepare the route path with some pattern resolution/replacement.
             $routePath = $this->replaceAssertPatterns($route->getRequirements(), $route->getPath());
             $routePath = $this->replaceWordPatterns($routePath);
 
-            $this->injectRoute($route, $route->getAllowedMethods(), $routePath);
+            $this->injectRoute($route->getAllowedMethods(), $routePath, $this->getRouteId($route));
         }
 
         $this->isInjected = true;
@@ -231,26 +246,26 @@ final class UrlMatcher implements UrlMatcherInterface
      *
      * The syntax used in the $route string depends on the used route parser.
      *
-     * @param string   $routeId
      * @param string[] $httpMethod
      * @param string   $routePath
+     * @param string   $routeId
      *
-     * @throws RouterException If two routes match the same url+method, or if the route is shadowed by a previous route.
+     * @throws RouterException If the parser fail, or two routes match the same url+method, or if the route is shadowed by a previous route.
      */
-    private function injectRoute(Route $route, array $httpMethod, string $routePath): void
+    private function injectRoute(array $httpMethod, string $routePath, string $routeId): void
     {
-        // TODO : attention car la méthode "parse()" peut aussi retourner une FastRoute\BadRouteException qu'il faudrait catcher !!!!   => https://github.com/nikic/FastRoute/blob/4406c3b79b3cce4e906fa9c11cd564d2828f6257/src/RouteParser/Std.php#L40
-        $routeDatas = $this->routeParser->parse($routePath);
-        foreach ($httpMethod as $method) {
-            foreach ($routeDatas as $routeData) {
-                try {
-                    $this->routeGenerator->addRoute($method, $routeData, $route);
-                } catch (\FastRoute\BadRouteException $e) {
-                    // TODO : ne plus utiliser l'exception RouterException, mais une exception générique type InvalidArgumentException. ou alors renommer l'exception en RoutingException.
-                    // TODO : créer une exception génrique BadRouteException dans le package "chiron/routing"
-                    throw new RouterException($e->getMessage());
+        try {
+            $routeDatas = $this->routeParser->parse($routePath);
+
+            foreach ($httpMethod as $method) {
+                foreach ($routeDatas as $routeData) {
+                    // Add the route (method + path), and use the route identifier as handler.
+                    $this->routeGenerator->addRoute($method, $routeData, $routeId);
                 }
             }
+        } catch (\FastRoute\BadRouteException $e) {
+            // This happen if the parse() function fail, or the route is invalid.
+            throw new RouterException($e->getMessage());
         }
     }
 }

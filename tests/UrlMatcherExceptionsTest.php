@@ -18,7 +18,6 @@ use Chiron\Routing\Exception\RouterException;
 class UrlMatcherExceptionsTest extends TestCase
 {
     private $request;
-    private $handler;
 
     /**
      * Setup.
@@ -26,7 +25,6 @@ class UrlMatcherExceptionsTest extends TestCase
     protected function setUp(): void
     {
         $this->request = new ServerRequest('GET', new Uri('/foo'));
-        $this->handler = function () {};
     }
 
     private function createUrlMatcher(array $routes): UrlMatcherInterface
@@ -46,7 +44,7 @@ class UrlMatcherExceptionsTest extends TestCase
         $this->expectExceptionMessage('Cannot use the same placeholder "test" twice');
 
         $routes = [
-            Route::get('/foo/{test}/{test:\d+}')->to($this->handler),
+            Route::get('/foo/{test}/{test:\d+}'),
         ];
 
         $matchingResult = $this->createUrlMatcher($routes)->match($this->request);
@@ -58,8 +56,8 @@ class UrlMatcherExceptionsTest extends TestCase
         $this->expectExceptionMessage('Cannot register two routes matching "/user/([^/]+)" for method "GET"');
 
         $routes = [
-            Route::get('/user/{id}')->to($this->handler), // oops, forgot \d+ restriction ;-)
-            Route::get('/user/{name}')->to($this->handler),
+            Route::get('/user/{id}'), // oops, forgot \d+ restriction ;-)
+            Route::get('/user/{name}'),
         ];
 
         $matchingResult = $this->createUrlMatcher($routes)->match($this->request);
@@ -71,8 +69,8 @@ class UrlMatcherExceptionsTest extends TestCase
         $this->expectExceptionMessage('Cannot register two routes matching "/user" for method "GET"');
 
         $routes = [
-            Route::get('/user')->to($this->handler),
-            Route::get('/user')->to($this->handler),
+            Route::get('/user'),
+            Route::get('/user'),
         ];
 
         $matchingResult = $this->createUrlMatcher($routes)->match($this->request);
@@ -84,8 +82,8 @@ class UrlMatcherExceptionsTest extends TestCase
         $this->expectExceptionMessage('Static route "/user/nikic" is shadowed by previously defined variable route "/user/([^/]+)" for method "GET"');
 
         $routes = [
-            Route::get('/user/{name}')->to($this->handler),
-            Route::get('/user/nikic')->to($this->handler),
+            Route::get('/user/{name}'),
+            Route::get('/user/nikic'),
         ];
 
         $matchingResult = $this->createUrlMatcher($routes)->match($this->request);
@@ -98,9 +96,61 @@ class UrlMatcherExceptionsTest extends TestCase
         $this->expectExceptionMessage('Regex "(en|de)" for parameter "lang" contains a capturing group');
 
         $routes = [
-            Route::get('/{lang:(en|de)}')->to($this->handler),
+            Route::get('/{lang:(en|de)}'),
         ];
 
         $matchingResult = $this->createUrlMatcher($routes)->match($this->request);
+    }
+
+    /**
+     * @dataProvider provideTestParseError
+     */
+    public function testParseError(string $routeString, string $expectedExceptionMessage): void
+    {
+        $this->expectException(RouterException::class);
+        $this->expectExceptionMessage($expectedExceptionMessage);
+
+        $routes = [
+            Route::get($routeString),
+        ];
+
+        $matchingResult = $this->createUrlMatcher($routes)->match($this->request);
+    }
+
+    /**
+     * @return string[][]
+     */
+    public function provideTestParseError(): array
+    {
+        return [
+            [
+                '/test[opt',
+                "Number of opening '[' and closing ']' does not match",
+            ],
+            [
+                '/test[opt[opt2]',
+                "Number of opening '[' and closing ']' does not match",
+            ],
+            [
+                '/testopt]',
+                "Number of opening '[' and closing ']' does not match",
+            ],
+            [
+                '/test[]',
+                'Empty optional part',
+            ],
+            [
+                '/test[[opt]]',
+                'Empty optional part',
+            ],
+            [
+                '[[test]]',
+                'Empty optional part',
+            ],
+            [
+                '/test[/opt]/required',
+                'Optional segments can only occur at the end of a route',
+            ],
+        ];
     }
 }
