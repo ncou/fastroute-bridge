@@ -195,7 +195,9 @@ final class UrlGenerator implements UrlGeneratorInterface
         // If the URI has a fragment we will move it to the end of this URI since it will
         // need to come after any query string that may be added to the URL else it is
         // not going to be available. We will remove it then append it back on here.
-        if (! is_null($fragment = parse_url($url, PHP_URL_FRAGMENT))) {
+        if (! is_null($fragment = parse_url($url, PHP_URL_FRAGMENT))) { // TODO : utiliser la méthode suivante qui préserve les points dans les variables ???? https://github.com/symfony/symfony/blob/4da4f50837dac448e007688ea18a153bfe756325/src/Symfony/Component/HttpFoundation/HeaderUtils.php#L199
+        // TODO : utiliser aussi cette exemple : https://github.com/guzzle/guzzle/issues/21
+        // TODO : utiliser : https://github.com/guzzle/psr7/blob/ad1de77a65b751d598ced37747bf4c17d457fbc9/src/functions.php#L509
             $url = preg_replace('/#.*/', '', $url);
         }
         $url .= $this->getRouteQueryString($parameters);
@@ -212,6 +214,7 @@ final class UrlGenerator implements UrlGeneratorInterface
      */
     private function getRouteQueryString(array $parameters): string
     {
+        // TODO : utiliser https://github.com/guzzle/psr7/blob/ad1de77a65b751d598ced37747bf4c17d457fbc9/src/functions.php#L560
         $query = http_build_query($parameters, '', '&', PHP_QUERY_RFC3986);
 
         return '?' . $query;
