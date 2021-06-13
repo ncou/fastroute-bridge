@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Chiron\FastRoute;
 
 use FastRoute\RouteParser\Std as RouteParser;
-use Chiron\Routing\RouteCollection;
+use Chiron\Routing\Map;
 use Chiron\Routing\UrlGeneratorInterface;
 use Psr\Http\Message\UriInterface;
 use InvalidArgumentException;
@@ -23,8 +23,8 @@ final class UrlGenerator implements UrlGeneratorInterface
     /** @var FastRoute\RouteParser */
     private $routeParser;
 
-    /** @var RouteCollection */
-    private $routeCollection;
+    /** @var Map */
+    private $map;
 
     /**
      * Characters that should not be URL encoded.
@@ -48,9 +48,9 @@ final class UrlGenerator implements UrlGeneratorInterface
         '%25' => '%',
     ];
 
-    public function __construct(RouteCollection $routeCollection)
+    public function __construct(Map $map)
     {
-        $this->routeCollection = $routeCollection;
+        $this->map = $map;
         $this->routeParser = new RouteParser();
     }
 
@@ -79,7 +79,7 @@ final class UrlGenerator implements UrlGeneratorInterface
      */
     public function relativeUrlFor(string $routeName, array $substitutions = [], array $queryParams = []): string
     {
-        $route = $this->routeCollection->getRoute($routeName);
+        $route = $this->map->getRoute($routeName);
 
         $routePath = $this->replaceAssertPatterns($route->getRequirements(), $route->getPath());
         $routePath = $this->replaceWordPatterns($routePath);
@@ -212,6 +212,7 @@ final class UrlGenerator implements UrlGeneratorInterface
      *
      * @return string
      */
+    // TODO utiliser un helper de type Arr::query    => exemple : https://github.com/top-think/think-helper/blob/3.0/src/helper/Arr.php#L603
     private function getRouteQueryString(array $parameters): string
     {
         // TODO : utiliser https://github.com/guzzle/psr7/blob/ad1de77a65b751d598ced37747bf4c17d457fbc9/src/functions.php#L560

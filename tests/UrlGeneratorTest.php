@@ -7,7 +7,7 @@ namespace Chiron\Tests\FastRoute;
 use Nyholm\Psr7\ServerRequest;
 use Nyholm\Psr7\Uri;
 use Chiron\Routing\Route;
-use Chiron\Routing\RouteCollection;
+use Chiron\Routing\Map;
 use Chiron\Routing\UrlGeneratorInterface;
 use Chiron\FastRoute\FastRoute as Router;
 use PHPUnit\Framework\TestCase;
@@ -20,13 +20,14 @@ class UrlGeneratorTest extends TestCase
 {
     private function createUrlGenerator(array $routes): UrlGeneratorInterface
     {
-        $routeCollection = new RouteCollection(new Container());
+        $map = new Map();
+        $map->setContainer(new Container());
 
         foreach ($routes as $route) {
-            $routeCollection->addRoute($route);
+            $map->addRoute($route);
         }
 
-        return new UrlGenerator($routeCollection);
+        return new UrlGenerator($map);
     }
 
     public function testSimpleRouteGenerated(): void

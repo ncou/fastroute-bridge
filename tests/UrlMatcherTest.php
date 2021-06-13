@@ -10,7 +10,7 @@ use Chiron\Routing\Route;
 use Chiron\FastRoute\FastRouteRouter as Router;
 use PHPUnit\Framework\TestCase;
 use Chiron\FastRoute\UrlMatcher;
-use Chiron\Routing\RouteCollection;
+use Chiron\Routing\Map;
 use Chiron\Routing\UrlMatcherInterface;
 use Chiron\Container\Container;
 use Chiron\Routing\Exception\RouterException;
@@ -19,13 +19,14 @@ class UrlMatcherTest extends TestCase
 {
     private function createUrlMatcher(array $routes): UrlMatcherInterface
     {
-        $routeCollection = new RouteCollection(new Container());
+        $map = new Map();
+        $map->setContainer(new Container());
 
         foreach ($routes as $route) {
-            $routeCollection->addRoute($route);
+            $map->addRoute($route);
         }
 
-        return new UrlMatcher($routeCollection);
+        return new UrlMatcher($map);
     }
 
 

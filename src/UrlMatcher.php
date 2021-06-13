@@ -9,7 +9,7 @@ use Chiron\Routing\Traits\RouteCollectionTrait;
 use Chiron\Routing\Exception\RouterException;
 use Chiron\Pipe\PipelineBuilder;
 use Chiron\Routing\UrlMatcherInterface;
-use Chiron\Routing\RouteCollection;
+use Chiron\Routing\Map;
 use Chiron\Routing\Route;
 use Chiron\Http\Message\RequestMethod as Method;
 use Chiron\Routing\RouteGroup;
@@ -84,8 +84,8 @@ final class UrlMatcher implements UrlMatcherInterface
 {
     use PatternsTrait;
 
-    /** @var RouteCollection */
-    private $routeCollection;
+    /** @var Map */
+    private $map;
     /** @var FastRoute\RouteParser */
     private $routeParser;
     /** @var FastRoute\DataGenerator */
@@ -102,9 +102,9 @@ final class UrlMatcher implements UrlMatcherInterface
     // TODO : créer un constructeur qui prendra en paramétre un routeCollector, ca évitera de faire un appel à setRouteCollector() !!!!
     // TODO : virer le DataGenerator qui est en paramétre et faire un new directement dans le constructeur.
     // TODO : renommer cette variable $routeCollection en $routes une fois qu'on aura fait hériter la classe RouteCollection::class de Iterator et Count !!!!
-    public function __construct(RouteCollection $routeCollection)
+    public function __construct(Map $map)
     {
-        $this->routeCollection = $routeCollection;
+        $this->map = $map;
 
         $this->routeParser = new RouteParser();
         // build parent route collector
@@ -135,6 +135,7 @@ final class UrlMatcher implements UrlMatcherInterface
         return $this;
     }
 
+    // TODO : indiquer le type d'exception qui peut être levée dans cette fonction !!!!
     public function match(ServerRequestInterface $request): MatchingResult
     {
         $this->injectRoutes($request);
@@ -168,7 +169,7 @@ final class UrlMatcher implements UrlMatcherInterface
 
     private function resolveRoute(string $routeId): Route
     {
-        foreach ($this->routeCollection as $route) {
+        foreach ($this->map as $route) {
             if ($routeId === $this->getRouteId($route)) {
                 return $route;
             }
@@ -231,7 +232,7 @@ final class UrlMatcher implements UrlMatcherInterface
         // TODO : améliorer le code en utilisant cet exemple : https://github.com/yiisoft/router-fastroute/blob/93de4e7af1ad4a4831a9d8986d0b3d4fcf17bfe2/src/UrlMatcher.php#L274
         // Regex pour splitter une url : https://www.admfactory.com/split-url-into-components-using-regex/
         // TODO : améliorer le code pour la vérification sur le getScheme / host et port : https://github.com/thephpleague/route/blob/5.x/src/Dispatcher.php#L69
-        foreach ($this->routeCollection as $route) {
+        foreach ($this->map as $route) {
             // Prepare the route path with some pattern resolution/replacement.
             $routePath = $this->replaceAssertPatterns($route->getRequirements(), $route->getPath());
             $routePath = $this->replaceWordPatterns($routePath);
