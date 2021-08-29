@@ -11,6 +11,8 @@ use Psr\Http\Message\UriInterface;
 use InvalidArgumentException;
 use Chiron\FastRoute\Traits\PatternsTrait;
 
+// TODO : créer une classe de helper pour manipuler les uri :   https://github.com/ventoviro/windwalker-uri/blob/master/UriHelper.php
+
 //https://github.com/symfony/routing/blob/master/Generator/UrlGenerator.php#L324
 //https://github.com/illuminate/routing/blob/master/RouteUrlGenerator.php
 //https://github.com/yiisoft/router-fastroute/blob/master/src/FastRoute.php#L227
@@ -216,6 +218,8 @@ final class UrlGenerator implements UrlGeneratorInterface
     private function getRouteQueryString(array $parameters): string
     {
         // TODO : utiliser https://github.com/guzzle/psr7/blob/ad1de77a65b751d598ced37747bf4c17d457fbc9/src/functions.php#L560
+        // https://github.com/guzzle/psr7/blob/c0dcda9f54d145bd4d062a6d15f54931a67732f9/src/Query.php#L71
+        // https://github.com/guzzle/psr7/blob/c0dcda9f54d145bd4d062a6d15f54931a67732f9/tests/QueryTest.php#L73
         $query = http_build_query($parameters, '', '&', PHP_QUERY_RFC3986);
 
         return '?' . $query;

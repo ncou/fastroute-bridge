@@ -8,7 +8,6 @@ namespace Chiron\FastRoute\Provider;
 //https://github.com/slimphp/Slim/blob/3.x/Slim/DefaultServicesProvider.php
 
 use Chiron\Container\Container;
-use Chiron\Container\InvokerInterface;
 use Chiron\Core\Container\Provider\ServiceProviderInterface;
 use Chiron\Kernel;
 use Chiron\FastRoute\UrlMatcher;

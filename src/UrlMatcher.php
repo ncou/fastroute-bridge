@@ -182,6 +182,7 @@ final class UrlMatcher implements UrlMatcherInterface
 
     private function getRouteId(Route $route): string
     {
+        // TODO : faire un MD5($id) plutot que d'utiliser une string à ralonge ??? et eventuellement mettre une méthode getId() qui effecturait ce calcul directement dans la classe Route::class ???
         return $route->getName() ?? (implode(', ', $route->getAllowedMethods()) . ' ' . $route->getHost() . $route->getPath());
     }
 

@@ -66,9 +66,24 @@ trait PatternsTrait
         'alpha'    => '[a-zA-Z]+',
         'hash'     => '[^/]+',
     ];
-
-
     */
+
+/*
+//https://github.com/izniburak/php-router/blob/master/src/Router.php#L63
+    protected $patterns = [
+        ':all' => '(.*)',
+        ':any' => '([^/]+)',
+        ':id' => '(\d+)',
+        ':int' => '(\d+)',
+        ':number' => '([+-]?([0-9]*[.])?[0-9]+)',
+        ':float' => '([+-]?([0-9]*[.])?[0-9]+)',
+        ':bool' => '(true|false|1|0)',
+        ':string' => '([\w\-_]+)',
+        ':slug' => '([\w\-_]+)',
+        ':uuid' => '([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})',
+        ':date' => '([0-9]{4}-(0[1-9]|1[0-2])-(0[1-9]|[1-2][0-9]|3[0-1]))',
+    ];
+*/
 
     /**
      * Add or replace the requirement pattern inside the route path.
@@ -98,6 +113,7 @@ trait PatternsTrait
      *
      * @return string
      */
+    // TODO : renommer en replaceAliasRegExPatterns ??? ou replaceAliasedPatterns
     private function replaceWordPatterns(string $path): string
     {
         return preg_replace(array_keys($this->patternMatchers), array_values($this->patternMatchers), $path);
