@@ -47,6 +47,8 @@ use Chiron\FastRoute\Traits\PatternsTrait;
 //https://github.com/vanchelo/modxFastRouter/blob/master/core/components/fastrouter/fastrouter.class.php#L240
 //https://github.com/abbadon1334/atk4-fastroute/blob/master/src/Router.php#L244
 
+//https://github.com/chubbyphp/chubbyphp-framework-router-fastroute/blob/master/src/RouteMatcher.php
+
 // TODO : il manque head et options dans la phpdoc, et le check sur la collision n'est plus d'actualité !!!!
 /**
  * Aggregate routes for the router.
@@ -176,7 +178,7 @@ final class UrlMatcher implements UrlMatcherInterface
         }
 
         // This case shouldn't happen in real life !
-        // TODO : retourner plutot une exception RouteNotFoundException !!!
+        // TODO : retourner plutot une exception RouteNotFoundException !!! ou une RoutingException ???
         throw new RouterException('Something went wrong. The route identifier seems invalid ?!?');
     }
 
@@ -212,6 +214,7 @@ final class UrlMatcher implements UrlMatcherInterface
 
     private function getDispatcher(): DispatcherInterface
     {
+        // TODO : utiliser un cache (classe Memory::class) pour stocker les data et les lire.
         return new RouteDispatcher($this->routeGenerator->getData());
     }
 
@@ -268,7 +271,7 @@ final class UrlMatcher implements UrlMatcherInterface
             }
         } catch (\FastRoute\BadRouteException $e) {
             // This happen if the parse() function fail, or the route is invalid.
-            throw new RouterException($e->getMessage());
+            throw new RouterException($e->getMessage()); // TODO : attention si on ne passe pas $e comme previous exception je pense qu'on va perdre une partie de l'info de la stacktrace !!!
         }
     }
 }

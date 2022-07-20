@@ -11,12 +11,14 @@ use Psr\Http\Message\UriInterface;
 use InvalidArgumentException;
 use Chiron\FastRoute\Traits\PatternsTrait;
 
-// TODO : créer une classe de helper pour manipuler les uri :   https://github.com/ventoviro/windwalker-uri/blob/master/UriHelper.php
+// TODO : créer une classe de helper pour manipuler les uri :   https://github.com/windwalker-io/uri/blob/master/src/UriHelper.php
 
 //https://github.com/symfony/routing/blob/master/Generator/UrlGenerator.php#L324
 //https://github.com/illuminate/routing/blob/master/RouteUrlGenerator.php
 //https://github.com/yiisoft/router-fastroute/blob/master/src/FastRoute.php#L227
 //https://github.com/yiisoft/router/blob/master/src/UrlGeneratorInterface.php
+
+//https://github.com/symfony/symfony/blob/6.2/src/Symfony/Component/HttpFoundation/UrlHelper.php
 
 final class UrlGenerator implements UrlGeneratorInterface
 {
@@ -108,6 +110,7 @@ final class UrlGenerator implements UrlGeneratorInterface
     // TODO : améliorer le code avec cette partie là =>   https://github.com/illuminate/routing/blob/master/RouteUrlGenerator.php#L77
     // https://github.com/zendframework/zend-expressive-fastroute/blob/master/src/FastRouteRouter.php#L239
     //https://github.com/illuminate/routing/blob/master/RouteUrlGenerator.php#L77
+    // TODO : vérifier si le type du paramétre attendu est le bon !!! https://github.com/symfony/symfony/blob/5c37c1fdd5396d191b09fe0f1732da26d8099ca8/src/Symfony/Component/Routing/Generator/UrlGenerator.php#L179
     private function generate(string $routePath, array $substitutions = [], array $queryParams = []): string
     {
         // TODO : attention il faut lui passer la route en paramétre de la fonction generate() car on doit aussi utiliser les paramétres par défaut pour générer l'URI => https://github.com/yiisoft/router-fastroute/blob/master/src/FastRoute.php#L231
